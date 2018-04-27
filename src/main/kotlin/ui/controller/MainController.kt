@@ -5,6 +5,7 @@ import com.github.thomasnield.rxkotlinfx.*
 import common.extensions.optional
 import common.extensions.value
 import core.model.SmartCard
+import i18n.I18n
 import io.reactivex.Observable
 import io.reactivex.functions.Function3
 import javafx.beans.property.SimpleObjectProperty
@@ -28,6 +29,8 @@ import java.nio.file.Files
 import java.util.Optional
 
 class MainController : Controller() {
+	private val str = I18n.ui.mainView
+
 	private lateinit var v: MainView
 
 	private val smartCard = SimpleObjectProperty<Optional<SmartCard>>()
@@ -64,7 +67,7 @@ class MainController : Controller() {
 				.toObservable()
 				.map {
 					it.value?.name
-						?: "Ningún archivo seleccionado"
+						?: str["no-file-selected"]
 				}
 				.toBinding()
 		)
@@ -120,7 +123,7 @@ class MainController : Controller() {
 	}
 
 	private fun handleSelectFile() {
-		chooseFile("Elige un archivo para firmar", emptyArray())
+		chooseFile(str["choose-file"], emptyArray())
 			.firstOrNull()
 			?.let { file.set(it.optional) }
 	}
@@ -170,18 +173,14 @@ class MainController : Controller() {
 		SmartCardPoller.pause()
 
 		confirm(
-			"Confirmar firma de archivo genérico",
-			"""El archivo que vas a firmar no es un archivo PDF,
-				|por lo que la aplicación lo firmará de forma
-				|genérica, guardando la firma en un archivo
-				|separado. ¿Continuar?
-			""".trimMargin()
+			str["confirm-generic-file.title"],
+			str["confirm-generic-file.text"]
 		) {
 			val signatureDestination = chooseFile(
-				title = "Guardar firma",
+				title = str["save-signature"],
 				filters = arrayOf(
 					FileChooser.ExtensionFilter(
-						"Archivo de firma",
+						str["signature-file"],
 						"*.sig"
 					)
 				),

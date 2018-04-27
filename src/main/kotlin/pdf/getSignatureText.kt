@@ -3,14 +3,16 @@ package pdf
 import core.model.AcaSmartCard
 import core.model.DniE
 import core.model.SmartCard
+import i18n.I18n
 
 fun getSignatureText(card: SmartCard) = when (card) {
-	is DniE -> "Firmado digitalmente por\n" +
+	is DniE -> "${I18n.pdf.signatureAppearance["signed-by"]}\n" +
 		"${card.lastName}, ${card.firstName}\n" +
-		"con DNI ${card.dniNumber}"
-	is AcaSmartCard -> "Firmado digitalmente por\n" +
+		"${I18n.pdf.signatureAppearance["with-dni"]} ${card.dniNumber}"
+	is AcaSmartCard -> "${I18n.pdf.signatureAppearance["signed-by"]}\n" +
 		"${card.lastName}, ${card.firstName}\n" +
-		"con DNI ${card.dniNumber}\n" +
-		"y nº colegiado ${card.colegiateNumber}"
-	else -> "Firmado digitalmente"
+		"${I18n.pdf.signatureAppearance["with-dni"]} ${card.dniNumber}\n" +
+		"${I18n.pdf.signatureAppearance["with-collegiate-number"]} " +
+		card.colegiateNumber
+	else -> I18n.pdf.signatureAppearance["signed"]
 }

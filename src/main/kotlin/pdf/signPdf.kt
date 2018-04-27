@@ -6,9 +6,8 @@ import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfReader
 import com.itextpdf.signatures.*
 import common.util.getNewTmpFile
-import core.model.DigestAlgorithm
-import core.model.EncryptionAlgorithm
-import core.model.SmartCard
+import core.model.*
+import i18n.I18n
 import ui.SIGNATURE_HEIGHT_MM
 import ui.SIGNATURE_WIDTH_MM
 import java.io.File
@@ -91,7 +90,15 @@ fun SmartCard.signPdf(
 	appearance.pageNumber = signaturePage
 	appearance.setReuseAppearance(false)
 
-	signer.fieldName = "Firma"
+	signer.fieldName = I18n.pdf.signatureField(
+		when (this) {
+			is DniE -> this.dniNumber
+			is AcaSmartCard -> this.colegiateNumber
+			else -> this.publicCert.subjectDN.name.substring(0, 10)
+		}
+	)
+
+	signer.certificationLevel
 
 	signer.signDetached(
 		BouncyCastleDigest(),
@@ -118,7 +125,7 @@ fun SmartCard.signPdf(
 		OcspClientBouncyCastle(null),
 		null,
 		0,
-		PdfSigner.CryptoStandard.CMS
+		PdfSigner.CryptoStandard.CADES
 	)
 
 	writeTmp.copyTo(file, overwrite = true)

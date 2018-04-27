@@ -8,6 +8,8 @@ modules will also require to extract this one.
 * `core`: contains the low level logic that interacts with the smart cards. The
 `SmartCards` object contains a function `getAll()` that will return high level
 APIs for interacting with them.
+* `i18n`: short for "internationalization", contains the logic for displaying
+localized messages based on the language of the end user's OS.
 * `pdf`: contains the logic for interacting with PDFs. It currently has two main
 functions: PDF rendering into images to display them in the UI, and PDF signing.
 * `ui`: contains the `FacuaSign` JavaFX application that presents an UI to

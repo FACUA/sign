@@ -1,5 +1,6 @@
 package ui.view
 
+import i18n.I18n
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.Label
@@ -10,8 +11,9 @@ import tornadofx.*
 import ui.controller.MainController
 import ui.util.SmartCardPoller
 
-class MainView : View("Facua Sign") {
+class MainView : View(I18n.ui["app-name"]) {
 	private val c: MainController by inject()
+	private val str = I18n.ui.mainView
 
 	lateinit var smartCardLabel: Label
 	lateinit var fileLabel: Label
@@ -25,7 +27,7 @@ class MainView : View("Facua Sign") {
 		left = form {
 			alignment = Pos.CENTER
 
-			fieldset("Archivo a firmar") {
+			fieldset(str["file-to-sign"]) {
 				hbox {
 					hbox {
 						style {
@@ -35,13 +37,13 @@ class MainView : View("Facua Sign") {
 						fileLabel = label()
 					}
 
-					selectFileButton = button("Seleccionar")
+					selectFileButton = button(str["select-file"])
 				}
 			}
 
-			fieldset("Tarjeta inteligente") {
+			fieldset(str["smart-card"]) {
 				searchingSmartCardsBox = hbox {
-					label("Buscando tarjetas...") {
+					label(str["searching-cards"]) {
 						style {
 							paddingRight = 10
 						}
@@ -58,8 +60,8 @@ class MainView : View("Facua Sign") {
 				}
 			}
 
-			fieldset("Autenticación") {
-				field("PIN de la tarjeta") {
+			fieldset(str["authentication"]) {
+				field(str["card-pin"]) {
 					pinField = passwordfield()
 				}
 			}
@@ -70,7 +72,7 @@ class MainView : View("Facua Sign") {
 				padding = box(10.px)
 			}
 
-			center = button("Firmar") {
+			center = button(str["sign"]) {
 				signButton = this
 			}
 

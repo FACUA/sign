@@ -1,6 +1,7 @@
 package ui.util
 
 import com.github.thomasnield.rxkotlinfx.doOnErrorFx
+import i18n.I18n
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 
@@ -9,8 +10,8 @@ fun <T> Observable<T>.subscribeWithErrorHandler(
 ): Disposable = this
 	.doOnErrorFx {
 		tornadofx.error(
-			"Ha ocurrido un error",
-			dialogMessage
+			I18n.ui.error["generic"],
+			dialogMessage?.let { I18n.ui.error[it] }
 		) {
 			System.exit(1)
 		}

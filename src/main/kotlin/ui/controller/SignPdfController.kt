@@ -56,9 +56,7 @@ class SignPdfController : Controller() {
 			.doOnNextFx {
 				v.images.add(it)
 			}
-			.subscribeWithErrorHandler(
-				"No se ha podido leer el PDF."
-			)
+			.subscribeWithErrorHandler("could-not-read-pdf")
 
 		// When the first image comes, select the first item on the list.
 		imageStream
@@ -143,9 +141,7 @@ class SignPdfController : Controller() {
 
 				signatureCompleteDialog()
 			}
-			.subscribeWithErrorHandler(
-				"No se ha podido firmar el archivo"
-			)
+			.subscribeWithErrorHandler("could-not-sign")
 	}
 
 	/**

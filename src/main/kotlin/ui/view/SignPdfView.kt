@@ -1,6 +1,7 @@
 package ui.view
 
 import core.model.SmartCard
+import i18n.I18n
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.Cursor
@@ -17,8 +18,9 @@ import ui.controller.SignPdfController
 import ui.util.SmartCardPoller
 import java.io.File
 
-class SignPdfView : Fragment("Firmar PDF") {
+class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 	private val c: SignPdfController by inject()
+	private val str = I18n.ui.signPdfView
 
 	val pdf: File by param()
 	val pin: String by param()
@@ -58,7 +60,7 @@ class SignPdfView : Fragment("Firmar PDF") {
 				paddingBottom = 10
 			}
 
-			label("Haz click en la previsualización para seleccionar dónde firmar el PDF") {
+			label(str["preview-tip"]) {
 				style {
 					padding = box(10.px)
 				}
@@ -96,17 +98,17 @@ class SignPdfView : Fragment("Firmar PDF") {
 
 		vbox {
 			form {
-				fieldset("Opciones de firma") {
-					label("Estos campos son opcionales")
+				fieldset(str["signature-options.name"]) {
+					label(str["signature-options.optional-fields"])
 
-					field("Motivo") {
+					field(str["signature-options.reason"]) {
 						signatureReasonField = textfield()
 					}
-					field("Lugar") {
+					field(str["signature-options.location"]) {
 						signatureLocationField = textfield()
 					}
 
-					signButton = button("Firmar")
+					signButton = button(str["sign"])
 				}
 			}
 		}
