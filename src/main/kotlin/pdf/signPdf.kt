@@ -75,7 +75,7 @@ fun SmartCard.signPdf(
 	val pdf = PdfDocument(PdfReader(readTmp))
 	val destination = FileOutputStream(writeTmp)
 
-	val signer = PdfSigner(reader, destination, false)
+	val signer = PdfSigner(reader, destination, true)
 
 	val appearance = signer.signatureAppearance
 	appearance.image = ImageDataFactory.create(
