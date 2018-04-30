@@ -98,8 +98,6 @@ fun SmartCard.signPdf(
 		}
 	)
 
-	signer.certificationLevel
-
 	signer.signDetached(
 		BouncyCastleDigest(),
 		object : IExternalSignature {

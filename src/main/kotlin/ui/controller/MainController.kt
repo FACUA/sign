@@ -9,8 +9,10 @@ import i18n.I18n
 import io.reactivex.Observable
 import io.reactivex.functions.Function3
 import javafx.beans.property.SimpleObjectProperty
+import javafx.scene.input.DragEvent
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
+import javafx.scene.input.TransferMode
 import javafx.stage.FileChooser
 import javafx.stage.Modality
 import javafx.stage.StageStyle
@@ -120,12 +122,34 @@ class MainController : Controller() {
 			.events(KeyEvent.KEY_PRESSED)
 			.filter { it.code == KeyCode.ENTER }
 			.subscribe { handleSign() }
+		v.root.setOnDragOver { handleFileDragOver(it) }
+		v.root.setOnDragDropped { handleFileDragDropped(it) }
 	}
 
 	private fun handleSelectFile() {
 		chooseFile(str["choose-file"], emptyArray())
 			.firstOrNull()
 			?.let { file.set(it.optional) }
+	}
+
+	private fun handleFileDragOver(event: DragEvent) {
+		event.acceptTransferModes(TransferMode.MOVE)
+		event.consume()
+	}
+
+	private fun handleFileDragDropped(event: DragEvent) {
+		val db = event.dragboard
+
+		val (draggedFile, isEventSuccessful) = if (db.hasFiles()) {
+			db.files.firstOrNull() to true
+		} else {
+			null to false
+		}
+
+		file.set(draggedFile.optional)
+
+		event.isDropCompleted = isEventSuccessful
+		event.consume()
 	}
 
 	private fun handleSign() {

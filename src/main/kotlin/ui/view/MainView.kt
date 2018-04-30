@@ -28,16 +28,23 @@ class MainView : View(I18n.ui["app-name"]) {
 			alignment = Pos.CENTER
 
 			fieldset(str["file-to-sign"]) {
-				hbox {
+				vbox {
 					hbox {
-						style {
-							paddingRight = 10
+						hbox {
+							style {
+								paddingRight = 10
+							}
+							alignment = Pos.CENTER
+							fileLabel = label()
 						}
-						alignment = Pos.CENTER
-						fileLabel = label()
-					}
 
-					selectFileButton = button(str["select-file"])
+						selectFileButton = button(str["select-file"])
+					}
+					label(str["select-or-drag-file"]) {
+						style {
+							paddingTop = 5
+						}
+					}
 				}
 			}
 
@@ -86,7 +93,7 @@ class MainView : View(I18n.ui["app-name"]) {
 	init {
 		with(primaryStage) {
 			width = 600.0
-			height = 250.0
+			height = 275.0
 			isResizable = false
 
 			icons.add(resources.image("/icon.png"))
