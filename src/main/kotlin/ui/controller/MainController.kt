@@ -64,13 +64,11 @@ class MainController : Controller() {
 				.toBinding()
 		)
 
+		// Make the file label display the selected file name
 		v.fileLabel.bind(
 			file
 				.toObservable()
-				.map {
-					it.value?.name
-						?: str["no-file-selected"]
-				}
+				.map { it.value?.name ?: str["no-file-selected"] }
 				.toBinding()
 		)
 
