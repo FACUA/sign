@@ -13,6 +13,6 @@ fun getSignatureText(card: SmartCard) = when (card) {
 		"${card.lastName}, ${card.firstName}\n" +
 		"${I18n.pdf.signatureAppearance["with-dni"]} ${card.dniNumber}\n" +
 		"${I18n.pdf.signatureAppearance["with-collegiate-number"]} " +
-		card.colegiateNumber
+		card.collegiateNumber
 	else -> I18n.pdf.signatureAppearance["signed"]
 }

@@ -18,7 +18,7 @@ class AcaSmartCard(operator: SmartCardOperator) : SmartCard(operator) {
 	val firstName get() = personalData[3]
 	val lastName get() = personalData[4]
 	val dniNumber get() = personalData[1]
-	val colegiateNumber get() = personalData[2]
+	val collegiateNumber get() = personalData[2]
 
-	override fun toString() = "ACA: $firstName $lastName (Colegiado Nº $colegiateNumber)"
+	override fun toString() = "ACA: $firstName $lastName (Colegiado Nº $collegiateNumber)"
 }

@@ -2,29 +2,32 @@ package ui.controller
 
 import common.util.async
 import com.github.thomasnield.rxkotlinfx.doOnNextFx
-import com.github.thomasnield.rxkotlinfx.observeOnFx
 import com.github.thomasnield.rxkotlinfx.toBinding
 import com.github.thomasnield.rxkotlinfx.toObservable
+import common.extensions.optional
+import common.extensions.presentValues
 import io.reactivex.Observable
-import io.reactivex.disposables.Disposable
 import io.reactivex.functions.BiFunction
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.scene.Node
 import javafx.scene.input.MouseEvent
 import javafx.stage.StageStyle
-import pdf.getPdfImages
+import pdf.PDFPageExtractor
 import pdf.signPdf
 import tornadofx.Controller
 import tornadofx.action
+import ui.util.extensions.not
+import ui.util.extensions.or
 import ui.util.extensions.split
 import ui.util.signatureCompleteDialog
 import ui.util.subscribeWithErrorHandler
 import ui.view.SignPdfView
 import ui.view.SigningProgressView
+import java.util.concurrent.TimeUnit
 
 class SignPdfController : Controller() {
 	private lateinit var v: SignPdfView
-	private lateinit var imageStreamSubscription: Disposable
+	private lateinit var extractor: PDFPageExtractor
 
 	/*
 	 * These coordinates represent the position of the top left corner of
@@ -37,44 +40,113 @@ class SignPdfController : Controller() {
 	fun init(v: SignPdfView) {
 		this.v = v
 
+		extractor = PDFPageExtractor(v.pdf)
+
 		setupBindings()
 		setupEventListeners()
-	}
-
-	fun dispose() {
-		if (!imageStreamSubscription.isDisposed) {
-			imageStreamSubscription.dispose()
-		}
+		setupDefaultValues()
 	}
 
 	private fun setupBindings() {
-		val imageStream = getPdfImages(v.pdf)
+		val currentPageTextStream = v.navigationCurrentPageTextField
+			.textProperty()
+			.toObservable()
 
-		// Add the images to the image list as they come.
-		// They will be automatically added to the thumbnail panel as it
-		imageStreamSubscription = imageStream
-			.doOnNextFx {
-				v.images.add(it)
-			}
-			.subscribeWithErrorHandler("could-not-read-pdf")
-
-		// When the first image comes, select the first item on the list.
-		imageStream
-			.take(1)
-			.observeOnFx()
-			.subscribe {
-				v.thumbnailsPane
-					.selectionModel
-					.selectFirst()
+		val currentPageStream = currentPageTextStream
+			.flatMap {
+				it.toIntOrNull()
+					?.let { Observable.just(it) }
+					?: Observable.empty()
 			}
 
-		// When another item of the list is selected, change the image.
+		//<editor-fold desc="Preview bindings" defaultstate="collapsed">
+
+		val actualPageStream = currentPageStream
+			// If the user clicks too quickly, this results in too much
+			// parallel processing and the JVM might crash. To solve this,
+			// we only render the page when the user "calms down".
+			.debounce(500, TimeUnit.MILLISECONDS)
+
 		v.preview.imageProperty()
 			.bind(
-				v.thumbnailsPane
-					.selectionModel
-					.selectedItemProperty()
+				actualPageStream
+					.flatMap {
+						async { extractor.getPageAsImage(it - 1).optional }
+					}
+					.presentValues()
+					.toBinding()
 			)
+
+		//</editor-fold>
+
+		//<editor-fold desc="Navigator bindings" defaultstate="collapsed">
+
+		val currentPageFieldValid = currentPageTextStream
+			.map {
+				it.toIntOrNull()
+					?.let {
+						it >= 1 && it <= extractor.pageCount
+					}
+					?: false
+			}
+			.toBinding()
+
+		val currentPageIsFirst = currentPageStream
+			.map { it <= 1 }
+			.toBinding()
+
+		val currentPageIsLast = currentPageStream
+			.map { it >= extractor.pageCount }
+			.toBinding()
+
+		// Whenever an invalid value is entered on the current page field,
+		// mark it red.
+		v.navigationCurrentPageTextField
+			.styleProperty()
+			.bind(
+				currentPageFieldValid
+					.not()
+					.toObservable()
+					.map {
+						"-fx-control-inner-background: ${
+							if (it) {
+								"#D32F2F"
+							} else {
+								"white"
+							}
+						};"
+					}
+					.toBinding()
+			)
+
+		// Disable the "Next page" button when the value of the current page is
+		// invalid, or when we're on the last page.
+		v.navigationNextPageButton.disableProperty()
+			.bind(
+				currentPageFieldValid.not()
+					.or(currentPageIsLast)
+			)
+
+		// Disable the "Previous page" button when the value of the current page
+		// is invalid, or when we're on the first page.
+		v.navigationPreviousPageButton.disableProperty()
+			.bind(
+				currentPageFieldValid.not()
+					.or(currentPageIsFirst)
+			)
+
+		// Disable the "First page" button when we're already on the first page.
+		v.navigationFirstPageButton.disableProperty()
+			.bind(currentPageIsFirst)
+
+		// Disable the "Last page" button when we're already on the last page.
+		v.navigationLastPageButton.disableProperty()
+			.bind(currentPageIsLast)
+
+		//</editor-fold>
+
+		//<editor-fold desc="Signature preview bindings"
+		//  defaultstate="collapsed">
 
 		// When the relative position of the signature is modified,  modify it
 		// on the signature image and the signature text too
@@ -98,13 +170,67 @@ class SignPdfController : Controller() {
 
 		bindToRelativePosition(v.signatureImagePreview)
 		bindToRelativePosition(v.signatureTextPreview)
+
+		//</editor-fold>
 	}
 
 	private fun setupEventListeners() {
 		v.previewPane
 			.setOnMouseClicked { handlePreviewClicked(it) }
+		v.navigationNextPageButton
+			.setOnMouseClicked { handleNextPageClicked() }
+		v.navigationPreviousPageButton
+			.setOnMouseClicked { handlePreviousPageClicked() }
+		v.navigationFirstPageButton
+			.setOnMouseClicked { handleFirstPageClicked() }
+		v.navigationLastPageButton
+			.setOnMouseClicked { handleLastPageClicked() }
 		v.signButton
 			.action { handleSign() }
+	}
+
+	private fun setupDefaultValues() {
+		// Simulate a lick on "First page"
+		handleFirstPageClicked()
+	}
+
+	private fun handleNextPageClicked() {
+		val currentPage = v.navigationCurrentPageTextField
+			.textProperty()
+			.get()
+			.toIntOrNull() ?: return
+
+		if (currentPage >= extractor.pageCount) {
+			return
+		}
+
+		v.navigationCurrentPageTextField
+			.textProperty()
+			.set("${currentPage + 1}")
+	}
+
+	private fun handlePreviousPageClicked() {
+		val currentPage = v.navigationCurrentPageTextField
+			.textProperty()
+			.get()
+			.toIntOrNull() ?: return
+
+		if (currentPage <= 0) {
+			return
+		}
+
+		v.navigationCurrentPageTextField
+			.textProperty()
+			.set("${currentPage - 1}")
+	}
+
+	private fun handleFirstPageClicked() {
+		v.navigationCurrentPageTextField.textProperty().set("1")
+	}
+
+	private fun handleLastPageClicked() {
+		v.navigationCurrentPageTextField.textProperty()
+			.set("${extractor.pageCount}")
 	}
 
 	private fun handlePreviewClicked(event: MouseEvent) {
@@ -121,18 +247,16 @@ class SignPdfController : Controller() {
 			.openModal(StageStyle.UNDECORATED) ?: return
 
 		async {
-			val page = v.thumbnailsPane.selectionModel.selectedIndex + 1
 			v.smartCard.signPdf(
 				v.pdf,
 				v.pin,
 				v.signatureReasonField.text,
 				v.signatureLocationField.text,
-				page,
+				v.navigationCurrentPageTextField.text.toInt(),
 				signatureRelativeX.value to
 					signatureRelativeY.value
 			)
 		}
-			.doOnNext { dispose() }
 			.doOnNextFx {
 				v.onSignedCallback()
 

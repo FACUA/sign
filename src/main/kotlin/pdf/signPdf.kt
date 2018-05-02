@@ -93,7 +93,7 @@ fun SmartCard.signPdf(
 	signer.fieldName = I18n.pdf.signatureField(
 		when (this) {
 			is DniE -> this.dniNumber
-			is AcaSmartCard -> this.colegiateNumber
+			is AcaSmartCard -> this.collegiateNumber
 			else -> this.publicCert.subjectDN.name.substring(0, 10)
 		}
 	)
