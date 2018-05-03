@@ -37,6 +37,22 @@ mv facua-sign.jar build
 It will build the project, then extract the `jar` from the container into
 `build/facua-sign.jar`.
 
+### Customizing signature logos
+
+If you're building this application for use within your organization, you may
+want to customize the logo that appears in the
+[PDF signature appearance](https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/PPKAppearances.pdf).
+When compiling the project with the commands above, all logos placed in
+`scr/main/resources/signature_logos` will be bundled into the resulting jar,
+and the user will be able to choose which logo to use when signing a PDF, along
+with using no logos. All files must be in the `.png` format, and the name of
+the file without the `.png` extension will be used in the dropdown.
+
+The `Facua.png` logo is included as a sample, but **we do not authorize to
+use this logo to sign documents**. Please remove our logo before building the
+project. You may add your own, or don't support placing logos on signature
+appearances.
+
 ## Building (or downloading) the card drivers
 
 FACUA also provides Dockerfiles for building or downloading and extracting
