@@ -30,3 +30,10 @@ el que hemos tenido éxito ha sido el lector "Bit4Id miniLector EVO".
 
 Este asunto está fuera de nuestro control, y no podemos conseguir que las
 tarjetas TS 2048 JS funcionen con lectores genéricos.
+
+### Documentación
+
+Para compilar y/o modificar el proyecto, consulta la documentación (en inglés):
+
+* [Estructura del proyecto](https://github.com/FACUA/sign/blob/master/docs/project_structure.md)
+* [Cómo compilar y empaquetar](https://github.com/FACUA/sign/blob/master/docs/how_to_build_and_package.md)
