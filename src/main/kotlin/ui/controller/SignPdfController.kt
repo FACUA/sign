@@ -1,21 +1,24 @@
 package ui.controller
 
+import com.github.thomasnield.rxkotlinfx.doOnCompleteFx
 import common.util.async
 import com.github.thomasnield.rxkotlinfx.doOnNextFx
 import com.github.thomasnield.rxkotlinfx.toBinding
 import com.github.thomasnield.rxkotlinfx.toObservable
 import common.extensions.optional
 import common.extensions.presentValues
+import i18n.I18n
 import io.reactivex.Observable
 import io.reactivex.functions.BiFunction
-import javafx.beans.property.SimpleDoubleProperty
 import javafx.scene.Node
+import javafx.scene.image.Image
 import javafx.scene.input.MouseEvent
 import javafx.stage.StageStyle
 import pdf.PDFPageExtractor
 import pdf.signPdf
 import tornadofx.Controller
 import tornadofx.action
+import tornadofx.selectedItem
 import ui.util.extensions.not
 import ui.util.extensions.or
 import ui.util.extensions.split
@@ -23,19 +26,16 @@ import ui.util.signatureCompleteDialog
 import ui.util.subscribeWithErrorHandler
 import ui.view.SignPdfView
 import ui.view.SigningProgressView
+import java.io.ByteArrayInputStream
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
+import kotlin.streams.toList
 
 class SignPdfController : Controller() {
 	private lateinit var v: SignPdfView
 	private lateinit var extractor: PDFPageExtractor
-
-	/*
-	 * These coordinates represent the position of the top left corner of
-	 * the signature, relative to the PDF preview image. The starting
-	 * position is on the bottom right corner.
-	 */
-	private val signatureRelativeX = SimpleDoubleProperty(0.60)
-	private val signatureRelativeY = SimpleDoubleProperty(0.85)
 
 	fun init(v: SignPdfView) {
 		this.v = v
@@ -155,8 +155,8 @@ class SignPdfController : Controller() {
 			Double,
 			Pair<Double, Double>
 		>(
-			signatureRelativeX.toObservable().map { it as Double },
-			signatureRelativeY.toObservable().map { it as Double },
+			v.signatureRelativeX.toObservable().map { it as Double },
+			v.signatureRelativeY.toObservable().map { it as Double },
 			BiFunction { x, y ->
 				signaturePositionsRelativeToAbsolute(x to y)
 			}
@@ -170,6 +170,31 @@ class SignPdfController : Controller() {
 
 		bindToRelativePosition(v.signatureImagePreview)
 		bindToRelativePosition(v.signatureTextPreview)
+
+		val imagePreviewStream = v.signatureLogoComboBox
+			.selectionModel
+			.selectedItemProperty()
+			.toObservable()
+			.flatMap {
+				if (it == I18n.pdf.signatureAppearance["no-logo"]) {
+					// Empty image
+					Observable.just(
+						Image(
+							ByteArrayInputStream(
+								ByteArray(0)
+							)
+						)
+					)
+				} else {
+					async {
+						resources.image("/signature_logos/$it.png")
+					}
+				}
+			}
+
+		v.signatureImagePreview
+			.imageProperty()
+			.bind(imagePreviewStream.toBinding())
 
 		//</editor-fold>
 	}
@@ -192,6 +217,40 @@ class SignPdfController : Controller() {
 	private fun setupDefaultValues() {
 		// Simulate a lick on "First page"
 		handleFirstPageClicked()
+
+		// Load all images from the /signature_logos directory in the
+		// resources directory, and add them to the combo box.
+		v.signatureLogoComboBox.itemsProperty().set(v.signatureLogos)
+		async {
+			val uri = resources.url("/signature_logos").toURI()
+
+			if (uri.scheme == "jar") {
+				val fs = FileSystems.newFileSystem(
+					uri,
+					emptyMap<String, Any>()
+				)
+				fs.getPath("/signature_logos")
+			} else {
+				Paths.get(uri)
+			}
+				.let { Files.walk(it, 1) }
+				.toList()
+				.filter { it.fileName.toString().endsWith("png") }
+				.mapIndexed { i, it ->
+					i to it.fileName
+						.toString()
+						.replace(".png", "")
+				}
+				.toList()
+		}
+			.flatMapIterable { it }
+			.doOnNextFx { (i, logo) ->
+				v.signatureLogos.add(i, logo)
+			}
+			.doOnCompleteFx {
+				v.signatureLogoComboBox.selectionModel.select(0)
+			}
+			.subscribeWithErrorHandler("could-not-load-logo")
 	}
 
 	private fun handleNextPageClicked() {
@@ -238,13 +297,15 @@ class SignPdfController : Controller() {
 			event.x to event.y
 		)
 
-		signatureRelativeX.set(x)
-		signatureRelativeY.set(y)
+		v.signatureRelativeX.set(x)
+		v.signatureRelativeY.set(y)
 	}
 
 	private fun handleSign() {
 		val modal = find<SigningProgressView>()
 			.openModal(StageStyle.UNDECORATED) ?: return
+
+		val logoName = v.signatureLogoComboBox.selectedItem
 
 		async {
 			v.smartCard.signPdf(
@@ -253,8 +314,13 @@ class SignPdfController : Controller() {
 				v.signatureReasonField.text,
 				v.signatureLocationField.text,
 				v.navigationCurrentPageTextField.text.toInt(),
-				signatureRelativeX.value to
-					signatureRelativeY.value
+				v.signatureRelativeX.value to
+					v.signatureRelativeY.value,
+				if (logoName == I18n.pdf.signatureAppearance["no-logo"]) {
+					null
+				} else {
+					logoName
+				}
 			)
 		}
 			.doOnNextFx {

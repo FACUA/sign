@@ -2,9 +2,11 @@ package ui.view
 
 import core.model.SmartCard
 import i18n.I18n
+import javafx.beans.property.SimpleDoubleProperty
 import javafx.geometry.Pos
 import javafx.scene.Cursor
 import javafx.scene.control.Button
+import javafx.scene.control.ComboBox
 import javafx.scene.control.Label
 import javafx.scene.control.TextField
 import javafx.scene.image.ImageView
@@ -26,6 +28,18 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 	val smartCard: SmartCard by param()
 	val onSignedCallback: () -> Unit by param()
 
+	/*
+	 * These coordinates represent the position of the top left corner of
+	 * the signature, relative to the PDF preview image. The starting
+	 * position is on the bottom right corner.
+	 */
+	val signatureRelativeX = SimpleDoubleProperty(0.60)
+	val signatureRelativeY = SimpleDoubleProperty(0.85)
+
+	val signatureLogos = mutableListOf(
+		I18n.pdf.signatureAppearance["no-logo"]
+	).observable()
+
 	lateinit var preview: ImageView
 	lateinit var previewPane: Pane
 	lateinit var navigationCurrentPageTextField: TextField
@@ -38,6 +52,7 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 	lateinit var signButton: Button
 	lateinit var signatureReasonField: TextField
 	lateinit var signatureLocationField: TextField
+	lateinit var signatureLogoComboBox: ComboBox<String>
 
 	override val root = hbox {
 		vbox {
@@ -62,9 +77,7 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 						fitHeight = A4_HEIGHT_MM * PDF_PREVIEW_SIZE_FACTOR
 					}
 					pane {
-						signatureImagePreview = imageview(
-							resources.image("/signature_logo.png")
-						) {
+						signatureImagePreview = imageview {
 							fitWidth =
 								SIGNATURE_WIDTH_MM * PDF_PREVIEW_SIZE_FACTOR
 							fitHeight =
@@ -117,6 +130,9 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 					}
 					field(str["signature-options.location"]) {
 						signatureLocationField = textfield()
+					}
+					field("Logo") {
+						signatureLogoComboBox = combobox()
 					}
 
 					signButton = button(str["sign"])

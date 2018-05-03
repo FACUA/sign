@@ -28,6 +28,9 @@ import kotlin.concurrent.thread
  * @param signatureRelativePosition The position of top left corner of the
  * visual representation of the signature, relative to the PDF size. For the X
  * axis, 0 being the left border, and 1 being the right border.
+ * @param signatureLogoName The name of the logo to use in the signature
+ * appearance, or null if no logo should be used. The logo must be placed in
+ * the /signature_logos folder in the resources root, with the PNG extension.
  */
 fun SmartCard.signPdf(
 	file: File,
@@ -35,7 +38,8 @@ fun SmartCard.signPdf(
 	signatureReason: String,
 	signatureLocation: String,
 	signaturePage: Int,
-	signatureRelativePosition: Pair<Double, Double>
+	signatureRelativePosition: Pair<Double, Double>,
+	signatureLogoName: String?
 ) {
 	/*
 	 * In this function we need to perform two read operations:
@@ -78,11 +82,15 @@ fun SmartCard.signPdf(
 	val signer = PdfSigner(reader, destination, true)
 
 	val appearance = signer.signatureAppearance
-	appearance.image = ImageDataFactory.create(
-		ClassLoader
-			.getSystemResourceAsStream("signature_logo.png")
-			.readBytes()
-	)
+
+	signatureLogoName?.let {
+		appearance.image = ImageDataFactory.create(
+			ClassLoader
+				.getSystemResourceAsStream("signature_logos/$it.png")
+				.readBytes()
+		)
+	}
+
 	appearance.layer2Text = getSignatureText(card = this)
 	appearance.reason = signatureReason
 	appearance.location = signatureLocation
