@@ -117,7 +117,7 @@ EOF
 
     popd
 
-    dpkg-deb --build ${package_name}
+    dpkg-deb --build -Z gzip ${package_name}
 popd
 
 mv "${tmp_dir}/${package_name}.deb" .
