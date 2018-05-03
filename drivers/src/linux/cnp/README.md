@@ -27,5 +27,6 @@ docker build -t cnp-linux . \
     --build-arg facua_sign_namespace=/usr/local/facua-sign/drivers
 docker run -v $(pwd):/out cnp-linux export-driver
 sudo chown $(id -u):$(id -g) cnp.tar.gz
+mkdir -p ../../../build
 mv cnp.tar.gz ../../../build
 ```

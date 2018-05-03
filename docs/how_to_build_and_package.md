@@ -30,6 +30,7 @@ In order to build the jar, the following commands can be ran:
 docker build -t facua-sign .
 docker run -v $(pwd):/out facua-sign export-jar
 sudo chown $(id -u):$(id -g) facua-sign.jar
+mkdir -p build
 mv facua-sign.jar build
 ```
 

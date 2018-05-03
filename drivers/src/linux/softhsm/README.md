@@ -12,5 +12,6 @@ docker build -t softhsm-linux . \
     --build-arg facua_sign_namespace=/usr/local/facua-sign/drivers
 docker run -v $(pwd):/out softhsm-linux export-driver
 sudo chown $(id -u):$(id -g) softhsm.tar.gz
+mkdir -p ../../../build
 mv softhsm.tar.gz ../../../build
 ```

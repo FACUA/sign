@@ -26,5 +26,6 @@ docker build -t bit4id-linux . \
     --build-arg facua_sign_namespace=/usr/local/facua-sign/drivers
 docker run -v $(pwd):/out bit4id-linux export-driver
 sudo chown $(id -u):$(id -g) bit4id.tar.gz
+mkdir -p ../../../build
 mv bit4id.tar.gz ../../../build
 ```

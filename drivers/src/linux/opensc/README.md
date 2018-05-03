@@ -35,5 +35,6 @@ docker build -t opensc-linux . \
     --build-arg facua_sign_namespace=/usr/local/facua-sign/drivers
 docker run -v $(pwd):/out opensc-linux export-driver
 sudo chown $(id -u):$(id -g) opensc.tar.gz
+mkdir -p ../../../build
 mv opensc.tar.gz ../../../build
 ```
