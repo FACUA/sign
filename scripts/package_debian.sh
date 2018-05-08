@@ -75,6 +75,7 @@ Comment=Una aplicación para firmar digitalmente. Versión ${version}.
 Exec=/usr/local/bin/facua-sign
 Icon=/${icon_path}/org.facua.sign.png
 Type=Application
+StartupWMClass=ui.FacuaSign
 EOF
             chmod +x org.facua.sign.desktop
 
