@@ -311,6 +311,7 @@ class SignPdfController : Controller() {
 			v.smartCard.signPdf(
 				v.pdf,
 				v.pin,
+				v.blockChangesCheckbox.isSelected,
 				v.signatureReasonField.text,
 				v.signatureLocationField.text,
 				v.navigationCurrentPageTextField.text.toInt(),

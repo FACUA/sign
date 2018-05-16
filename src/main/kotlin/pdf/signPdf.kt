@@ -35,6 +35,7 @@ import kotlin.concurrent.thread
 fun SmartCard.signPdf(
 	file: File,
 	pin: String,
+	blockChanges: Boolean,
 	signatureReason: String,
 	signatureLocation: String,
 	signaturePage: Int,
@@ -82,6 +83,12 @@ fun SmartCard.signPdf(
 	val signer = PdfSigner(reader, destination, true)
 
 	val appearance = signer.signatureAppearance
+
+	signer.certificationLevel = if (blockChanges) {
+		PdfSigner.CERTIFIED_NO_CHANGES_ALLOWED
+	} else {
+		PdfSigner.NOT_CERTIFIED
+	}
 
 	signatureLogoName?.let {
 		appearance.image = ImageDataFactory.create(

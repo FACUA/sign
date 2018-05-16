@@ -5,10 +5,7 @@ import i18n.I18n
 import javafx.beans.property.SimpleDoubleProperty
 import javafx.geometry.Pos
 import javafx.scene.Cursor
-import javafx.scene.control.Button
-import javafx.scene.control.ComboBox
-import javafx.scene.control.Label
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.image.ImageView
 import javafx.scene.layout.Pane
 import pdf.getSignatureText
@@ -40,19 +37,20 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 		I18n.pdf.signatureAppearance["no-logo"]
 	).observable()
 
-	lateinit var preview: ImageView
-	lateinit var previewPane: Pane
+	lateinit var blockChangesCheckbox: CheckBox
 	lateinit var navigationCurrentPageTextField: TextField
-	lateinit var navigationNextPageButton: Button
-	lateinit var navigationPreviousPageButton: Button
 	lateinit var navigationFirstPageButton: Button
 	lateinit var navigationLastPageButton: Button
+	lateinit var navigationNextPageButton: Button
+	lateinit var navigationPreviousPageButton: Button
+	lateinit var preview: ImageView
+	lateinit var previewPane: Pane
 	lateinit var signatureImagePreview: ImageView
-	lateinit var signatureTextPreview: Label
-	lateinit var signButton: Button
-	lateinit var signatureReasonField: TextField
 	lateinit var signatureLocationField: TextField
 	lateinit var signatureLogoComboBox: ComboBox<String>
+	lateinit var signatureReasonField: TextField
+	lateinit var signatureTextPreview: Label
+	lateinit var signButton: Button
 
 	override val root = hbox {
 		vbox {
@@ -134,8 +132,23 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 					field("Logo") {
 						signatureLogoComboBox = combobox()
 					}
+					field {
+						blockChangesCheckbox = checkbox(
+							str["signature-options.certify.title"]
+						)
+					}
 
-					signButton = button(str["sign"])
+					label(str["signature-options.certify.explanation"]) {
+						wrapTextProperty().set(true)
+						maxWidthProperty().set(250.0)
+					}
+
+					hbox {
+						style {
+							paddingTop = 10
+						}
+						signButton = button(str["sign"])
+					}
 				}
 			}
 		}
