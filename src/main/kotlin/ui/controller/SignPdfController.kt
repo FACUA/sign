@@ -148,7 +148,7 @@ class SignPdfController : Controller() {
 		//<editor-fold desc="Signature preview bindings"
 		//  defaultstate="collapsed">
 
-		// When the relative position of the signature is modified,  modify it
+		// When the relative position of the signature is modified, modify it
 		// on the signature image and the signature text too
 		val (absoluteXStream, absoluteYStream) = Observable.combineLatest<
 			Double,

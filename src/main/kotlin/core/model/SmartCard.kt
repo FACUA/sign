@@ -3,6 +3,7 @@ package core.model
 import sun.security.pkcs11.wrapper.CK_ATTRIBUTE
 import sun.security.pkcs11.wrapper.PKCS11Constants
 import core.util.SmartCardOperator
+import sun.security.pkcs11.wrapper.PKCS11Exception
 import java.security.cert.X509Certificate
 
 abstract class SmartCard(
@@ -39,6 +40,17 @@ abstract class SmartCard(
 		.matchEntire(publicCert.subjectDN.name)
 		?.groupValues
 		?: throw Exception("No se reconoce el formato del certificado")
+
+	fun isPinValid(pin: String): Boolean = try {
+		operator.testLogin(pin)
+		true
+	} catch (e: PKCS11Exception) {
+		if (e.message == "CKR_PIN_INCORRECT") {
+			false
+		} else {
+			throw e
+		}
+	}
 
 	fun signBytes(bytes: ByteArray, pin: String) = operator.getObjectHandles(
 			arrayOf(

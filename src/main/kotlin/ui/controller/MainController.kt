@@ -7,7 +7,8 @@ import common.extensions.value
 import core.model.SmartCard
 import i18n.I18n
 import io.reactivex.Observable
-import io.reactivex.functions.Function3
+import io.reactivex.functions.Function4
+import io.reactivex.subjects.PublishSubject
 import javafx.beans.property.SimpleObjectProperty
 import javafx.scene.input.DragEvent
 import javafx.scene.input.KeyCode
@@ -37,6 +38,9 @@ class MainController : Controller() {
 
 	private val smartCard = SimpleObjectProperty<Optional<SmartCard>>()
 	private val file = SimpleObjectProperty<Optional<File>>(Optional.empty())
+	// Will be true when the user clicks "Sign", while the application is
+	// validating the PIN.
+	private val backgroundWorking = SimpleObjectProperty<Boolean>(false)
 
 	fun init(v: MainView) {
 		this.v = v
@@ -89,8 +93,10 @@ class MainController : Controller() {
 		// - The smart card is present
 		// - There is a pin in the pin field
 		// - The file is present
+		// - The application is not working in the background
 		v.signButton.disableProperty().bind(
 			Observable.combineLatest<
+				Boolean,
 				Boolean,
 				Boolean,
 				Boolean,
@@ -106,10 +112,21 @@ class MainController : Controller() {
 				file
 					.present()
 					.toObservable(),
-				Function3 { a, b, c -> a && b && c }
+				backgroundWorking
+					.toObservable()
+					.map { !it },
+				Function4 { a, b, c, d -> a && b && c && d }
 			)
 				.toBinding()
 				.not()
+		)
+
+		// Make the sign button display "Working" when the application is
+		// working in the background, or "Sign" otherwise.
+		v.signButton.textProperty().bind(
+			backgroundWorking
+				.toObservable()
+				.map { str[if (it) "working" else "sign"] }
 		)
 	}
 
@@ -150,27 +167,82 @@ class MainController : Controller() {
 		event.consume()
 	}
 
+	/**
+	 * Checks that the entered PIN is correct, and launches a "Sign file" dialog
+	 * corresponding to the file's content type. While the PIN is being tested,
+	 * and the dialogs are open, the application is set to be working, which
+	 * will prevent this method from being called again before finishing.
+	 */
 	private fun handleSign() {
 		val pin = v.pinField.text
-		val file = file.value.value
+		val fileToSign = file.value.value
 		val smartCard = smartCard.value.value
 
 		if (pin.isEmpty() ||
-			file == null ||
+			fileToSign == null ||
 			smartCard == null) { return }
 
-		async { Files.probeContentType(file.toPath()) }
+		setApplicationBackgroundWorking()
+
+		async { smartCard.isPinValid(pin) }
 			.doOnNextFx {
+				if (!it) {
+					tornadofx.error(
+						I18n.ui.error["invalid-pin"]
+					) {
+						v.pinField.clear()
+						setApplicationNotBackgroundWorking()
+					}
+				}
+			}
+			// Only continue if the PIN is correct
+			.filter { it }
+			.flatMap {
+				async { Files.probeContentType(fileToSign.toPath()) }
+			}
+			.observeOnFx()
+			.flatMap {
 				when (it) {
-					"application/pdf" -> handleSignPdf(file, smartCard, pin)
-					else -> handleSignGenericFile(file, smartCard, pin)
+					"application/pdf" -> handleSignPdf(
+						fileToSign,
+						smartCard,
+						pin
+					)
+					else -> handleSignGenericFile(
+						fileToSign,
+						smartCard,
+						pin
+					)
+				}
+			}
+			.doOnNextFx { setApplicationNotBackgroundWorking() }
+			.doOnErrorFx { setApplicationNotBackgroundWorking() }
+			.doOnNextFx {
+				if (it) {
+					// When the file is signed, remove so it is not
+					// accidentally signed again
+					file.set(Optional.empty())
 				}
 			}
 			.subscribeWithErrorHandler()
 	}
 
-	private fun handleSignPdf(pdf: File, smartCard: SmartCard, pin: String) {
-		SmartCardPoller.pause()
+	/**
+	 * Launches the "Sign PDF" dialog.
+	 *
+	 * @param pdf The PDF to sign
+	 * @param smartCard The SmartCard which will sign the PDF
+	 * @param pin The PIN of the SmartCard
+	 *
+	 * @return An observable that emits true once the PDF has been signed, or
+	 * emits false if the signing operation is aborted.
+	 */
+	private fun handleSignPdf(
+		pdf: File,
+		smartCard: SmartCard,
+		pin: String
+	): Observable<Boolean> {
+		val subject = PublishSubject.create<Boolean>()
 
 		find<SignPdfView>(
 			mapOf(
@@ -178,21 +250,37 @@ class MainController : Controller() {
 				SignPdfView::smartCard to smartCard,
 				SignPdfView::pin to pin,
 				SignPdfView::onSignedCallback to {
-					// When the file is signed, remove so it is not
-					// accidentally signed again
-					file.set(Optional.empty())
+					subject.onNext(true)
+				},
+				SignPdfView::onClosedCallback to {
+					subject.onNext(false)
 				}
 			)
 		)
 			.openModal(modality = Modality.WINDOW_MODAL)
+
+		return subject.share()
 	}
 
+	/**
+	 * Launches the "Sign generic file" dialog. This dialog will let the user
+	 * know that the signature will be stored in a separate file, since the
+	 * signature can't be embedded in the file itself because the file format
+	 * is unknown to the application.
+	 *
+	 * @param file The file to sign
+	 * @param smartCard The SmartCard which will sign the PDF
+	 * @param pin The PIN of the SmartCard
+	 *
+	 * @return An observable that emits true once the file has been signed, or
+	 * emits false if the signing operation is aborted.
+	 */
 	private fun handleSignGenericFile(
 		file: File,
 		smartCard: SmartCard,
 		pin: String
-	) {
-		SmartCardPoller.pause()
+	): Observable<Boolean> {
+		var observable: Observable<Boolean>? = null
 
 		confirm(
 			str["confirm-generic-file.title"],
@@ -213,7 +301,7 @@ class MainController : Controller() {
 			val modal = find<SigningProgressView>()
 				.openModal(StageStyle.UNDECORATED) ?: return@confirm
 
-			async {
+			observable = async {
 				val signature = smartCard.signBytes(
 					file.readBytes(),
 					pin
@@ -225,8 +313,27 @@ class MainController : Controller() {
 					modal.close()
 					signatureCompleteDialog()
 				}
+				.map { true }
 		}
 
+		return observable ?: Observable.just(false)
+	}
+
+	/**
+	 * Changes the status of the application to "Background working", which will
+	 * pause the Smart Card Poller, and disable the "Sign" button.
+	 */
+	private fun setApplicationBackgroundWorking() {
+		SmartCardPoller.pause()
+		backgroundWorking.set(true)
+	}
+
+	/**
+	 * Changes the status of the application no "Not background working", which
+	 * will resume the Smart Card Poller, and enable the "Sign" button.
+	 */
+	private fun setApplicationNotBackgroundWorking() {
 		SmartCardPoller.resume()
+		backgroundWorking.set(false)
 	}
 }

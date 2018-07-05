@@ -24,6 +24,7 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 	val pin: String by param()
 	val smartCard: SmartCard by param()
 	val onSignedCallback: () -> Unit by param()
+	val onClosedCallback: () -> Unit by param()
 
 	/*
 	 * These coordinates represent the position of the top left corner of
@@ -156,7 +157,7 @@ class SignPdfView : Fragment(I18n.ui.signPdfView["name"]) {
 
 	override fun onUndock() {
 		super.onUndock()
-		SmartCardPoller.resume()
+		onClosedCallback()
 	}
 
 	init {

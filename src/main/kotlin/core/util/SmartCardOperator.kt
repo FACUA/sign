@@ -43,6 +43,12 @@ class SmartCardOperator(private val pkcs11: PKCS11, private val cardSlot: Long) 
 			) as X509Certificate
 	}
 
+	/**
+	 * Performs an empty session to test if C_Login works, so that the user can
+	 * be notified if their pin is incorrect.
+	 */
+	fun testLogin(pin: String) = session(pin = pin) {}
+
 	fun sign(
 		scObject: SmartCardObject,
 		bytes: ByteArray,
