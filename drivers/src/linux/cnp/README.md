@@ -1,10 +1,8 @@
 # CNP Driver
 
 The Cuerpo Nacional de Policía provides their own proprietary PKCS#11 module
-that enables communications with all DNI models. For the DNIe, the OpenSC driver
-is a viable open source alternative and generally performs better. For the DNI
-3.0, there is no open source alternative yet (see opensc/README.md for more
-information). 
+that enables communications with all DNI models. The OpenSC driver is a viable
+open source alternative and generally performs better.
 
 ## Downloading the drivers
 

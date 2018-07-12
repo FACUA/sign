@@ -25,8 +25,7 @@ object SmartCardDrivers {
 	// The first driver should be the most common one, or the fastest one.
 	val installedDrivers get() = listOf(
 		"bit4id/usr/lib/libbit4ipki.so",
-		"opensc/usr/lib/opensc-pkcs11.so",
-		"cnp/usr/lib/libpkcs11-dnie.so"
+		"opensc/usr/lib/opensc-pkcs11.so"
 	)
 		.map { File("${driversDir.absolutePath}/$it") }
 		.filter { it.exists() }

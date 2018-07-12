@@ -1,17 +1,8 @@
 # OpenSC driver
 
 [OpenSC](https://github.com/OpenSC/OpenSC) is an open source PKCS#11 middleware
-that supports many widely used smart cards. As of 17/04/2018, OpenSC enables
-Facua Sign to support the DNIe. However, it does not support the DNI 3.0 yet
-(although
-[work is being put into it](https://github.com/OpenSC/OpenSC/issues/1313)).
-
-The CNP proprietary drivers support both versions of the DNI, which makes ths an
-optional dependency. That said, the OpenSC drivers perform much better for the
-DNIe, which might make it worth it to include.
-
-When the issue linked above is resolved, the CNP drivers will no longer be
-needed, and these ones will be preferred.
+that supports many widely used smart cards. OpenSC enables Facua Sign to support
+the DNIe and DNI 3.0.
 
 ## Building the drivers
 
@@ -31,7 +22,7 @@ compiled binaries:
 
 ```bash
 docker build -t opensc-linux . \
-    --build-arg opensc_commit=2c167a99825a3db4138acff7611801ef73f2c9cd \
+    --build-arg opensc_commit=fbc9ff84bcfdc72d54b90f65158f5e60c204864c \
     --build-arg facua_sign_namespace=/usr/local/facua-sign/drivers
 docker run -v $(pwd):/out opensc-linux export-driver
 sudo chown $(id -u):$(id -g) opensc.tar.gz
